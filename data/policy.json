@@ -1,0 +1,23 @@
+{
+  "policyNumber": "PHS-2026-0045127",
+  "productName": "Paytm Health Shield (demo policy)",
+  "policyHolder": "Amit Sharma",
+  "insuredMembers": [
+    { "name": "Amit Sharma", "relationship": "Self" },
+    { "name": "Neha Sharma", "relationship": "Spouse" },
+    { "name": "Suresh Sharma", "relationship": "Father" },
+    { "name": "Kamla Sharma", "relationship": "Mother" }
+  ],
+  "sumInsured": 500000,
+  "sumInsuredUsed": 0,
+  "copayPercent": 10,
+  "copayAppliesTo": ["Father", "Mother"],
+  "roomRentCapPerDay": 5000,
+  "claimWindowDays": 60,
+  "exclusions": [
+    "Cosmetic or plastic surgery",
+    "Dental treatment unless caused by an accident",
+    "Non-medical items like toiletries, attendant charges and food for attendants",
+    "Diseases in the first 30 days of the policy, except accidents"
+  ]
+}
