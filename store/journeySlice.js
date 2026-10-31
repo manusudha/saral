@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { evaluate, derive } from '@/lib/rules';
 import { fieldDef } from '@/lib/schemas';
+import { illustrativePolicyContext } from '@/lib/illustrativePolicy';
 
 let msgId = 0;
 const newMsg = (m) => ({ id: ++msgId, at: Date.now(), ...m });
@@ -99,8 +100,8 @@ const slice = createSlice({
       let v = value;
       if (def?.type === 'number') v = value === '' ? '' : Number(String(value).replace(/[₹,\s]/g, ''));
       if (key === 'pan') v = String(value).toUpperCase().trim();
-      s.fields = derive(s.journey, { ...s.fields, [key]: { value: v, source: 'user', confidence: 1, verified: true } });
-      s.status = evaluate(s.journey, s.fields, s.docs);
+      s.fields = derive(s.journey, { ...s.fields, [key]: { value: v, source: 'user', confidence: 1, verified: true } }, illustrativePolicyContext);
+      s.status = evaluate(s.journey, s.fields, s.docs, { policy: illustrativePolicyContext });
       if (s.pending) s.status.complete = false;
       s.changed = [key];
       s.changeNonce += 1;

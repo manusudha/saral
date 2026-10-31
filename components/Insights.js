@@ -18,7 +18,7 @@ const TYPE = {
   intimation: { title: 'Intimation now, reimbursement later', body: 'Cashless may not be available here. Keep every bill; claim reimbursement after discharge.' },
 };
 
-// Policy + hospital context at the top of the claim
+// Sample policy assumptions and hospital context at the top of the claim
 export function ClaimContext({ status }) {
   const net = status?.network;
   const type = status?.claimType;
@@ -28,17 +28,19 @@ export function ClaimContext({ status }) {
       <div className="rounded-2xl border border-line bg-white p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <div className="text-sm font-semibold text-ink">{policy.productName}</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-amber-700">Illustrative sample only</div>
+            <div className="mt-1 text-sm font-semibold text-ink">{policy.productName}</div>
             <div className="text-xs text-mute">{policy.insurer} · TPA: {policy.tpa}</div>
           </div>
-          <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${policy.status === 'active' ? 'bg-emerald-50 text-ok' : 'bg-red-50 text-red-700'}`}>{policy.status === 'active' ? 'Active' : policy.status}</span>
+          <span className="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">Demo</span>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-          <dt className="text-mute">Valid</dt><dd className="text-right font-medium text-ink">{prettyDate(policy.startDate)} – {prettyDate(policy.endDate)}</dd>
-          <dt className="text-mute">Cover left</dt><dd className="text-right font-medium text-ink">{inr(remaining)} of {inr(policy.sumInsured)}</dd>
-          <dt className="text-mute">Co-pay</dt><dd className="text-right font-medium text-ink">{policy.copay.percent}% for parents</dd>
-          <dt className="text-mute">Room rent</dt><dd className="text-right font-medium text-ink">up to {inr(policy.roomRentCapPerDay)}/day</dd>
+          <dt className="text-mute">Example dates</dt><dd className="text-right font-medium text-ink">{prettyDate(policy.startDate)} – {prettyDate(policy.endDate)}</dd>
+          <dt className="text-mute">Example cover left</dt><dd className="text-right font-medium text-ink">{inr(remaining)} of {inr(policy.sumInsured)}</dd>
+          <dt className="text-mute">Example co-pay</dt><dd className="text-right font-medium text-ink">{policy.copay.percent}% for parents</dd>
+          <dt className="text-mute">Example room rent</dt><dd className="text-right font-medium text-ink">up to {inr(policy.roomRentCapPerDay)}/day</dd>
         </dl>
+        <p className="mt-3 text-xs leading-relaxed text-warn">These sample terms are not taken from your account or verified against your policy.</p>
       </div>
       <div className={`rounded-2xl border p-4 ${type ? 'border-sky/40 bg-sky-50/60' : 'border-dashed border-line bg-white'}`}>
         {type ? (
@@ -100,7 +102,7 @@ export function Breakdown({ journey, status }) {
             ))}
           </tbody>
         </table>
-        <p className="border-t border-line px-4 py-2 text-[11px] leading-relaxed text-mute">Estimate only. The insurer/TPA decides the approved amount after reviewing your documents.</p>
+        <p className="border-t border-line px-4 py-2 text-[11px] leading-relaxed text-mute">Illustrative estimate using sample policy terms, not your policy data. The insurer/TPA decides the approved amount after reviewing your documents.</p>
       </div>
     );
   }

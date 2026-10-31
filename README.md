@@ -161,17 +161,19 @@ lib/
   mockExtract.js             offline extractor + canned FAQ answers
   llm.js / sarvam.js         API clients
   db.js                      SQLite: table definitions + every read/write
-  memory.js                  remembers facts across journeys (stored in the memory table)
+  memory.js                  remembers facts per Clerk user across journeys
+  clerkUser.js               reads the signed-in Clerk account name and phone
+  illustrativePolicy.js      sample claim assumptions without sample member identities
   clientMedia.js             browser audio playback, photo compression
-data/policy.json             demo policy (sum insured, co-pay, exclusions, claim window)
-data/profile.json            demo logged-in user
+data/policy.json             illustrative demo policy assumptions, not a user's policy
+data/profile.json            legacy demo profile; not used to personalize signed-in users
 public/samples/              sample bill + discharge summary
 ```
 
 ## 6. Not in this version (roadmap)
-- **Login (Clerk)** and per-user data isolation. Today everything belongs to one demo user.
+- **Per-user policy integrations.** Journeys, submissions and remembered facts are scoped to the signed-in user. Clerk-provided name and phone may be prefilled; Saral asks users for other details, and claim terms remain illustrative until an insurer integration is added.
 - **shadcn/ui component library.** The current UI uses Tailwind directly.
-- **Live insurer/TPA and lender integrations.** The network list, policy and loan terms are demo data, and post-submission statuses are simulated and labelled as such.
+- **Live insurer/TPA and lender integrations.** The network list, claim policy assumptions and loan terms are demo data, not retrieved from a user's account. Claim estimates are illustrative, and post-submission statuses are simulated and labelled as such.
 - **Scanned PDFs.** Text PDFs are read; for a scanned PDF Saral asks for photos of the pages.
 
 ## 6b. Troubleshooting

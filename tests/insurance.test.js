@@ -127,7 +127,7 @@ describe('conversation + documents (offline engine)', () => {
     expect(r.fields.hospitalName.value).toBe('Apollo Hospitals');
     expect(r.fields.hospitalCity.value).toBe('Mumbai');
     expect(r.fields.admissionStatus.value).toBe('Currently admitted');
-    expect(r.fields.patientName.value).toBe('Suresh Sharma');
+    expect(r.fields.patientName).toBeUndefined();
   });
 
   it('6. bill amount differs from what the user said → asks, does not overwrite', async () => {

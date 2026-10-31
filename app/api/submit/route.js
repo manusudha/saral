@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { evaluate } from '@/lib/rules';
-import { remember } from '@/lib/memory';
-import { sessionExists, saveSubmission, updateSubmissionN8n, logMessage } from '@/lib/db';
+import { profileFactsFromFields } from '@/lib/memory';
+import { loadSession, saveSubmission, updateSubmissionN8n } from '@/lib/db';
 import { maskPan } from '@/lib/agent';
 import policy from '@/data/policy.json';
+import { getSignedInUser } from '@/lib/clerkUser';
+import { SCHEMAS } from '@/lib/schemas';
+import { illustrativePolicyContext } from '@/lib/illustrativePolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +35,31 @@ async function notifyN8n(payload) {
 const step = (label, detail, state, extra = {}) => ({ label, detail, state, simulated: true, ...extra });
 
 export async function POST(req) {
-  const { journey, fields, docs, sessionId, consents = {}, pending } = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+  }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+  }
+  const user = await getSignedInUser();
+  if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
+  const session = loadSession(body.sessionId, user.id);
+  if (!session || !session.state?.fields) return NextResponse.json({ error: 'Unknown session' }, { status: 404 });
+  if (session.status !== 'active') return NextResponse.json({ error: 'This journey has already been submitted.' }, { status: 409 });
+  if (!SCHEMAS[session.journey]) return NextResponse.json({ error: 'Unknown journey' }, { status: 400 });
+
+  const { consents = {} } = body;
+  if (!consents || typeof consents !== 'object' || Array.isArray(consents)) {
+    return NextResponse.json({ error: 'Please confirm the details and give consent before submitting.' }, { status: 400 });
+  }
+  const { fields, docs = {}, pending } = session.state;
+  const journey = session.journey;
+  const sessionId = session.id;
   if (pending) return NextResponse.json({ error: 'Please answer Saral’s open question first.' }, { status: 400 });
-  const status = evaluate(journey, fields, docs);
+  const status = evaluate(journey, fields, docs, { policy: illustrativePolicyContext });
   if (!status.complete) return NextResponse.json({ error: 'Some details are still missing or need fixing.', status }, { status: 400 });
   if (!consents.accurate || !consents.share) return NextResponse.json({ error: 'Please confirm the details and give consent before submitting.' }, { status: 400 });
   const v = (k) => fields[k]?.value;
@@ -42,9 +67,10 @@ export async function POST(req) {
   const c = status.computed;
 
   let result;
+  const memoryFacts = profileFactsFromFields(fields);
   if (journey === 'health_claim') {
     const type = status.claimType;
-    if (v('upiId')) remember({ upiId: v('upiId') }, sessionId);
+    if (v('upiId')) memoryFacts.upiId = v('upiId');
     if (type === 'cashless') {
       result = {
         id: ref('PAU'), status: 'Pre-authorisation request prepared', headline: 'Cashless request prepared', amountLabel: 'Estimated insurer share', amount: c.payout,
@@ -83,7 +109,6 @@ export async function POST(req) {
       };
     }
   } else {
-    remember({ fullName: v('fullName'), pan: v('pan'), upiId: v('disbursalUpi'), employerName: v('employerName') }, sessionId);
     const label = c.outcome === 'indicatively_eligible' ? 'Indicatively eligible' : c.outcome === 'lower_amount' ? 'Lower amount suggested' : 'Criteria not met';
     result = {
       id: ref('LPE'), status: label, headline: `${label}`, amountLabel: c.outcome === 'indicatively_eligible' ? 'Indicative EMI' : 'Indicative maximum amount',
@@ -100,22 +125,33 @@ export async function POST(req) {
       ],
     };
   }
+  if (journey === 'health_claim') {
+    result.disclaimer = 'This estimate uses illustrative sample policy terms, not information from your account or a verified policy. Confirm coverage and benefits with your insurer/TPA.';
+  }
 
-  let saved = false;
   try {
-    if (sessionExists(sessionId)) {
-      saveSubmission({ ...result, sessionId, journey, fields, computed: { ...c, breakdown: status.breakdown, consents }, n8nStatus: 'pending' });
-      logMessage(sessionId, { role: 'user', kind: 'text', text: `Confirmed and submitted (${result.id})` });
-      saved = true;
-    }
+    const saved = saveSubmission({
+      ...result,
+      sessionId,
+      userId: user.id,
+      journey,
+      fields,
+      computed: { ...c, breakdown: status.breakdown, consents },
+      n8nStatus: 'pending',
+      memoryFacts,
+    });
+    if (!saved) return NextResponse.json({ error: 'This journey is no longer available to submit.' }, { status: 409 });
   } catch (e) {
     console.error('[saral] db error on submit', e.message);
+    return NextResponse.json({ error: 'Could not save this submission. Please try again.' }, { status: 500 });
   }
 
   const safeFields = Object.fromEntries(Object.entries(fields).map(([k, f]) => [k, { value: k === 'pan' ? maskPan(f.value) : f.value, source: f.source }]));
   const n8n = await notifyN8n({ event: `${journey}.submitted`, reference: result.id, journey, claimType: status.claimType || null, status: result.status, submittedAt: now, fields: safeFields, computed: { ...c, network: undefined }, simulated: true });
-  if (saved) {
-    try { updateSubmissionN8n(result.id, n8n.sent ? 'sent' : `not sent: ${n8n.reason || n8n.status}`); } catch {}
+  try {
+    updateSubmissionN8n(result.id, n8n.sent ? 'sent' : `not sent: ${n8n.reason || n8n.status}`);
+  } catch (e) {
+    console.error('[saral] db error updating n8n status', e.message);
   }
-  return NextResponse.json({ ...result, n8n, saved });
+  return NextResponse.json({ ...result, n8n, saved: true });
 }

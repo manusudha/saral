@@ -6,6 +6,8 @@ import { getSubmissionDetail } from '@/lib/db';
 import { SCHEMAS, fieldDef } from '@/lib/schemas';
 import { displayValue, inr } from '@/lib/format';
 import { istTime } from '@/lib/time';
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,8 +30,10 @@ function Section({ title, subtitle, children }) {
   );
 }
 
-export default function SubmissionDetail({ params }) {
-  const d = getSubmissionDetail(params.id);
+export default async function SubmissionDetail({ params }) {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+  const d = getSubmissionDetail(params.id, userId);
   if (!d) notFound();
   const { submission: sub, session, events, messages, documents } = d;
   const schema = SCHEMAS[sub.journey];

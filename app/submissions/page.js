@@ -5,13 +5,17 @@ import { listSubmissions, stats } from '@/lib/db';
 import { SCHEMAS } from '@/lib/schemas';
 import { inr } from '@/lib/format';
 import { istTime } from '@/lib/time';
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Past submissions · Saral' };
 
-export default function SubmissionsPage() {
-  const rows = listSubmissions();
-  const s = stats();
+export default async function SubmissionsPage() {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+  const rows = listSubmissions(userId);
+  const s = stats(userId);
   const tiles = [
     ['Journeys started', s.sessions],
     ['Submitted', s.submissions],

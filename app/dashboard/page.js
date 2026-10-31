@@ -27,7 +27,12 @@ export default function Home() {
   const [resetMsg, setResetMsg] = useState('');
 
   async function resetMemory() {
-    await fetch('/api/reset', { method: 'POST' });
+    const response = await fetch('/api/reset', { method: 'POST' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setResetMsg(result.error || 'Could not clear memory. Please try again.');
+      return;
+    }
     setResetMsg('Memory cleared — next journeys start fresh.');
     setTimeout(() => setResetMsg(''), 3000);
   }
