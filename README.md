@@ -20,6 +20,8 @@ npm run dev
 
 Open **http://localhost:3000**.
 
+Saral can be installed from a supported browser using **Install app** (when available) or the browser's install menu. The app shell and sample documents can be cached; signed-in pages and API responses are never saved for offline use.
+
 The welcome screen at `/` links to the custom-branded sign-in and sign-up pages. After authentication, users go to the Saral dashboard at `/dashboard`. Clerk uses individual accounts; Organizations are disabled.
 
 Clerk sign-in requires a Clerk development instance. The initial setup writes temporary development keys to `.env.local`. For a fresh clone, authenticate with `npx -y clerk@latest auth login`, link the Clerk app you want to use with `npx -y clerk@latest link --app <application-id>`, then run `npx -y clerk@latest env pull`. Do not commit `.env.local`. Sign-in supports email/password, phone, username, Google, Apple, and Microsoft.
