@@ -1,23 +1,46 @@
 {
+  "_note": "DEMO policy for the hackathon. Replace with an insurer/TPA integration (see lib/policy.js).",
+  "configVersion": "policy-demo-2026.10",
   "policyNumber": "PHS-2026-0045127",
-  "productName": "Paytm Health Shield (demo policy)",
+  "productName": "Paytm Health Shield Family Floater (demo)",
+  "insurer": "Demo General Insurance Co. Ltd.",
+  "tpa": "Demo Health TPA Pvt. Ltd.",
+  "networkId": "DEMO-NET-1",
+  "status": "active",
+  "startDate": "2026-04-01",
+  "endDate": "2027-03-31",
   "policyHolder": "Amit Sharma",
   "insuredMembers": [
-    { "name": "Amit Sharma", "relationship": "Self" },
-    { "name": "Neha Sharma", "relationship": "Spouse" },
-    { "name": "Suresh Sharma", "relationship": "Father" },
-    { "name": "Kamla Sharma", "relationship": "Mother" }
+    { "name": "Amit Sharma", "relationship": "Self", "coveredSince": "2022-04-01" },
+    { "name": "Neha Sharma", "relationship": "Spouse", "coveredSince": "2022-04-01" },
+    { "name": "Suresh Sharma", "relationship": "Father", "coveredSince": "2023-04-01" },
+    { "name": "Kamla Sharma", "relationship": "Mother", "coveredSince": "2026-04-01" }
   ],
   "sumInsured": 500000,
-  "sumInsuredUsed": 0,
-  "copayPercent": 10,
-  "copayAppliesTo": ["Father", "Mother"],
+  "sumInsuredUsed": 60000,
+  "deductible": 0,
+  "copay": { "percent": 10, "appliesTo": ["Father", "Mother"] },
   "roomRentCapPerDay": 5000,
-  "claimWindowDays": 60,
+  "diseaseLimits": [
+    { "name": "Cataract (per eye)", "keywords": ["cataract", "motiyabind"], "limit": 40000 }
+  ],
+  "waitingPeriods": [
+    { "name": "Initial waiting period (illness)", "days": 30, "appliesTo": "all", "exceptAccident": true },
+    { "name": "Specific illnesses — 2 years", "days": 730, "keywords": ["cataract", "hernia", "piles", "kidney stone", "gall bladder", "knee replacement", "joint replacement", "sinus"] },
+    { "name": "Pre-existing diseases — 3 years", "days": 1095, "keywords": ["pre-existing", "ped"] }
+  ],
   "exclusions": [
-    "Cosmetic or plastic surgery",
-    "Dental treatment unless caused by an accident",
-    "Non-medical items like toiletries, attendant charges and food for attendants",
-    "Diseases in the first 30 days of the policy, except accidents"
-  ]
+    { "name": "Cosmetic or plastic surgery", "keywords": ["cosmetic", "plastic surgery", "liposuction", "hair transplant"] },
+    { "name": "Dental treatment unless caused by an accident", "keywords": ["dental", "tooth", "teeth", "root canal"] },
+    { "name": "Obesity / weight-control treatment", "keywords": ["bariatric", "obesity", "weight loss"] },
+    { "name": "Self-inflicted injury or substance abuse", "keywords": ["alcohol", "substance abuse", "overdose"] }
+  ],
+  "nonPayableKeywords": ["toiletries", "attendant", "admission kit", "registration", "food for attendant", "baby food", "cosmetics", "telephone"],
+  "claimRules": {
+    "cashlessIntimationHours": 24,
+    "plannedCashlessIntimationHoursBefore": 48,
+    "reimbursementSubmissionDays": 30,
+    "reimbursementDocuments": ["hospitalBill", "dischargeSummary"],
+    "optionalDocuments": ["paymentReceipt", "pharmacyBill", "diagnosticReport", "prescription"]
+  }
 }

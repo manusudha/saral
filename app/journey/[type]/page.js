@@ -6,12 +6,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { startJourney, setLang, setAutoSpeak, addSaralMessage } from '@/store/journeySlice';
 import { speakText, stopSpeaking } from '@/lib/clientMedia';
 import { inr } from '@/lib/format';
-import { allFields } from '@/lib/schemas';
 import Logo from '@/components/Logo';
 import ChatPane from '@/components/ChatPane';
 import LiveForm from '@/components/LiveForm';
 import ReviewPanel from '@/components/ReviewPanel';
 import SuccessPanel from '@/components/SuccessPanel';
+import { DocViewer } from '@/components/Insights';
 
 function Status({ on, onLabel, offLabel, title }) {
   return (
@@ -23,19 +23,18 @@ function Status({ on, onLabel, offLabel, title }) {
 }
 
 function useProgress() {
-  const { schema, fields, docs } = useSelector((s) => s.journey);
-  if (!schema) return { done: 0, total: 0, pct: 0 };
-  const req = allFields(schema).filter((f) => f.required);
-  const done = req.filter((f) => fields[f.key]?.value !== undefined && fields[f.key]?.value !== '').length
-    + schema.documents.filter((d) => docs[d.key]).length;
-  const total = req.length + schema.documents.length;
+  const { status, fields, docs } = useSelector((s) => s.journey);
+  if (!status?.required) return { done: 0, total: 0, pct: 0 };
+  const done = status.required.filter((k) => fields[k]?.value !== undefined && fields[k]?.value !== '').length
+    + (status.requiredDocs || []).filter((d) => docs[d]).length;
+  const total = status.required.length + (status.requiredDocs || []).length;
   return { done, total, pct: Math.round((done / Math.max(total, 1)) * 100) };
 }
 
 export default function JourneyPage() {
   const { type } = useParams();
   const dispatch = useDispatch();
-  const { stage, capabilities, lang, autoSpeak, messages, result, journey, schema, busy, changeNonce } = useSelector((s) => s.journey);
+  const { stage, capabilities, lang, autoSpeak, messages, result, journey, schema, busy, changeNonce, resumed } = useSelector((s) => s.journey);
   const spokenRef = useRef(0);
   const startedRef = useRef(null);
   const [tab, setTab] = useState('chat'); // small screens only: which pane is showing
@@ -49,7 +48,7 @@ export default function JourneyPage() {
     startedRef.current = type;
     stopSpeaking();
     setTab('chat');
-    dispatch(startJourney(type));
+    dispatch(startJourney({ journey: type }));
   }, [type, dispatch]);
 
   useEffect(() => () => stopSpeaking(), []);
@@ -60,6 +59,7 @@ export default function JourneyPage() {
     if (!last || last.role !== 'saral') return;
     if (last.id <= spokenRef.current) return;
     spokenRef.current = last.id;
+    if (last.restored) return;
     if (autoSpeak && busy !== 'listening') speakText(last.text, last.lang || lang, capabilities.tts);
   }, [messages, autoSpeak, lang, capabilities.tts, busy]);
 
@@ -100,6 +100,7 @@ export default function JourneyPage() {
           <div className="ml-auto flex items-center gap-3">
             <Status on={capabilities.ai} onLabel="AI live" offLabel="AI offline (demo)" title="Is a real AI model connected?" />
             <Status on={capabilities.stt} onLabel="Sarvam voice" offLabel="Browser voice" title="Which speech engine is used" />
+            <button onClick={() => { stopSpeaking(); setTab('chat'); dispatch(startJourney({ journey: type, fresh: true })); }} className="whitespace-nowrap text-sm font-medium text-mute hover:text-navy">Start over</button>
             <Link href="/submissions" className="hidden whitespace-nowrap text-sm font-medium text-mute hover:text-navy lg:inline">Past submissions</Link>
             <div className="flex overflow-hidden rounded-full border border-line text-xs font-bold" role="group" aria-label="Reply language">
               {[['hi', 'हिंदी'], ['en', 'EN']].map(([k, l]) => (
@@ -123,6 +124,10 @@ export default function JourneyPage() {
         </div>
       </header>
 
+      {resumed && stage === 'chat' && (
+        <div className="shrink-0 border-b border-sky/30 bg-sky-50 px-4 py-2 text-center text-sm text-navy sm:px-6">Picked up where you left off. <button onClick={() => dispatch(startJourney({ journey: type, fresh: true }))} className="font-semibold underline">Start a new one instead</button></div>
+      )}
+      <DocViewer />
       {/* small screens: switch between chat and form */}
       <div className="flex shrink-0 border-b border-line bg-white lg:hidden" role="tablist">
         {[['chat', 'Chat'], ['form', stage === 'review' ? 'Review' : stage === 'success' ? 'Done' : `Form · ${progress.pct}%`]].map(([k, l]) => (

@@ -77,28 +77,36 @@ The success screen shows "sent to n8n ✓" when it worked. Payload sent:
   "computed": { "payout": 37800, "copay": 4200 } }
 ```
 
-## 4. The 3-minute demo script
+## 4. Demo scripts (about 3 minutes each)
 
-Before you start, click **Reset Saral's memory** on the home page.
+Before rehearsing, click **Reset all demo data** on *Past submissions*. Every line below is also a tappable chip in the chat, so the demo works even if the hall is too noisy for the mic.
 
-1. **Home → File a health claim.** Policy number, holder and UPI are already filled (👤 Paytm account).
-2. Tap the mic and say: *"Mere papa dengue se hospital mein admit the, 42 hazar ka bill aaya."* Relationship, patient name, diagnosis and amount fill in.
-   - Want to show the cross-check? Say **40 hazar** instead. After the bill photo, Saral says the bill shows ₹42,000 and uses that amount.
-3. Saral asks for the bill. Tap **📷 Upload hospital bill** to use the phone camera or a file, or **Use sample hospital bill**. Hospital, dates and amount fill in.
-4. Ask *"co-pay kya hota hai?"* and Saral explains it in Hindi.
-5. Upload the **discharge summary**. Saral confirms it matches the bill and says the payout: ₹42,000 − 10% co-pay = **₹37,800**.
-6. **Review & submit.** Every field shows its source (🎤 / 💬 / 📄 / 👤 / 🧠). Edit one field (e.g. the UPI ID), tick the box and submit. You get a claim ID and a timeline, and n8n fires.
-7. **View audit record.** Shows the whole journey from the database: every AI fill with the sentence or photo it came from, and your edit marked as "User".
-8. **Next: try a loan pre-check.** Name and UPI come back as 🧠 *Remembered*. Say:
-   - *"Mujhe shaadi ke liye 1.5 lakh ka loan chahiye"*
-   - *"Main naukri karta hoon, salary 45 hazar hai, koi EMI nahi"*
-   - *"24 mahine"* → *"ABCDE1234F"*
+**A. Reimbursement, where the bill disagrees with what was said** (Health insurance claim)
+1. *"Papa dengue se admit the, 40 hazar ka bill aaya"*: relationship, diagnosis and ₹40,000 fill in; the patient name comes from the policy.
+2. *"Shanti Care hospital, Mumbai"*: network lookup says **Not in network** (demo list).
+3. *"Discharge ho gaye, bill maine bhar diya"*: claim type becomes **Reimbursement**, and Saral asks for the bill.
+4. **Use sample hospital bill.** An extracted-details card appears. The bill says ₹42,000 but the user said ₹40,000, so Saral **asks which is correct** instead of overwriting. Tap *Use hospital bill*.
+5. Ask *"co-pay kya hota hai?"*, then **Use sample discharge summary**. A **match / mismatch table** compares it with the bill.
+6. The estimate breakdown shows ₹42,000 − 10% co-pay = **₹37,800**. Click any 📄 chip to open the source document.
+7. Refresh the page: **"Picked up where you left off"**. Review → both consent boxes → **Submit claim**. The timeline steps are marked *simulated*.
 
-   Result: eligible, EMI ≈ ₹7,344. Try 5 lakh on a 30k salary to see the "you can borrow up to…" path.
+**B. Cashless at a network hospital**
+1. *"Mere papa ko dengue hai, Mumbai ke Apollo Hospital mein admit kiya hai"*: hospital, city and "currently admitted" are extracted from one sentence → Apollo CBD Belapur is in network → **Cashless** (subject to pre-authorisation).
+2. *"30 Oct 2026 ko admit hue"*, then *"Estimate 1.2 lakh bataya hai"*: the insurer's estimated share is ₹1,08,000, and you pay ₹12,000.
+3. Try *"My father is admitted at Apollo hospital"* with no city. Saral asks **which branch** (Navi Mumbai / Chennai / Hyderabad) instead of guessing.
+4. Try *"My brother was admitted to Fortis hospital"*. Saral flags that **the brother isn't covered** and asks whether another policy covers him.
 
-Every example line is also a tappable chip in the chat, so the demo still works if the hall is too noisy for the mic.
+**C. Loan eligibility**
+1. *"Mujhe 3 lakh ka loan chahiye, meri salary 60 hazar hai aur 8 hazar ki ek EMI chal rahi hai"*: three fields from one sentence.
+2. *"Naukri karta hoon, TCS mein"* → *"36 mahine"* → *"5 saal ka experience"* → *"ABCDE1234F"*.
+3. The FOIR breakdown shows ₹30,000 max EMIs − ₹8,000 existing = ₹22,000 room, against a new EMI of ₹10,547 → **indicatively eligible**.
+4. *"Actually meri salary 40 hazar hai"*: the value is updated, the old one stays in the audit log, and everything is recalculated.
+5. Review shows **Key facts**: EMI, total interest, total repayment and processing fee + GST, plus the RBI-style disclosure. It never says "pre-approved".
+6. Try *"I earn 45000 a month and want 5 lakh for 36 months"* to see the **lower amount / longer tenure** suggestion. The request itself is never changed silently.
 
-**Sample documents** (made-up hospital, watermarked SAMPLE) are in `public/samples/`. Print them or open them on a second phone so you can photograph them live.
+**Rules and config you can show:** `data/policy.json` (dates, members, co-pay, room rent, waiting periods, exclusions, claim deadline), `data/network-hospitals.json` (labelled **demo** network list), and `data/loan-config.json` (illustrative rate, FOIR, limits). All are versioned and editable without touching code.
+
+**Tests:** `npm test` runs 36 automated scenarios: all 15 insurance cases, the 10 loan cases, AI failure, malformed AI output and unsupported files.
 
 ## 5. How it works
 
@@ -110,6 +118,10 @@ photo ─► compressed in browser ┘        │
                                          ├─► lib/replies.js — what Saral says next (templates, Hindi + English)
                                          └─► updated form + reply ─► Redux ─► live form UI ─► /api/tts (Sarvam)
 submit ─► /api/submit ─► rules re-checked ─► saved to SQLite + memory ─► n8n webhook ─► claim ID
+
+AI layer  (lib/agent.js, lib/documents.js): understands the turn, extracts fields, reads documents (images via a vision model, PDFs via text extraction)
+Rules     (lib/rules.js, lib/network.js):    claim type, coverage checks, payout/EMI, eligibility, what to ask next. No AI involved.
+Conflicts: when sources disagree (you said / bill / discharge summary / policy), Saral asks; nothing is silently overwritten.
 
 Every turn is also written to SQLite: the message, the photo's extracted fields, and one audit row per changed field.
 Review-screen edits go through /api/edit so they're logged as "User".
@@ -146,7 +158,13 @@ data/profile.json            demo logged-in user
 public/samples/              sample bill + discharge summary
 ```
 
-## 6. Troubleshooting
+## 6. Not in this version (roadmap)
+- **Login (Clerk)** and per-user data isolation. Today everything belongs to one demo user.
+- **shadcn/ui component library.** The current UI uses Tailwind directly.
+- **Live insurer/TPA and lender integrations.** The network list, policy and loan terms are demo data, and post-submission statuses are simulated and labelled as such.
+- **Scanned PDFs.** Text PDFs are read; for a scanned PDF Saral asks for photos of the pages.
+
+## 6b. Troubleshooting
 
 - **Mic shows an error.** The message now says exactly what's wrong:
   - *"only works on localhost or https"*: you opened the app by IP address or a non-https link. Use `http://localhost:3000`, or an https tunnel / Vercel.

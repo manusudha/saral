@@ -1,7 +1,10 @@
 {
+  "_note": "Demo logged-in Paytm user (KYC-verified fields).",
   "fullName": "Amit Sharma",
   "firstNameHi": "अमित",
-  "mobile": "98XXXXXX21",
+  "mobile": "9876500021",
   "upiId": "amit.sharma@paytm",
+  "dob": "1994-06-12",
+  "pincode": "400069",
   "pan": ""
 }

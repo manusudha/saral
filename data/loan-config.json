@@ -1,0 +1,15 @@
+{
+  "_note": "ILLUSTRATIVE demo terms. Not an offer from any bank or NBFC. Replace with lender rules / API (see lib/loanRules.js).",
+  "configVersion": "loan-demo-2026.10",
+  "label": "Illustrative terms for demo — not a lender offer",
+  "interestRatePa": 16,
+  "processingFeePercent": 2,
+  "gstOnFeePercent": 18,
+  "foirMax": { "Salaried": 0.5, "Self-employed": 0.45 },
+  "minMonthlyIncome": { "Salaried": 15000, "Self-employed": 25000 },
+  "minExperienceYears": { "Salaried": 1, "Self-employed": 2 },
+  "age": { "min": 21, "max": 60 },
+  "amount": { "min": 50000, "max": 2500000 },
+  "tenureMonths": { "min": 6, "max": 60 },
+  "creditCardObligationPercent": 5
+}

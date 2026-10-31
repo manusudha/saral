@@ -1,0 +1,17 @@
+{
+  "_note": "DEMO network list for networkId DEMO-NET-1. NOT real insurer/TPA data. Replace with the insurer's network API (see lib/network.js).",
+  "source": "demo-dataset",
+  "updatedOn": "2026-10-01",
+  "hospitals": [
+    { "id": "H001", "name": "Apollo Hospitals", "aliases": ["apollo", "apollo hospital"], "city": "Navi Mumbai", "area": "CBD Belapur", "networks": ["DEMO-NET-1"] },
+    { "id": "H002", "name": "Apollo Hospitals", "aliases": ["apollo", "apollo hospital"], "city": "Chennai", "area": "Greams Road", "networks": ["DEMO-NET-1"] },
+    { "id": "H003", "name": "Apollo Hospitals", "aliases": ["apollo", "apollo hospital"], "city": "Hyderabad", "area": "Jubilee Hills", "networks": [] },
+    { "id": "H004", "name": "Fortis Hospital", "aliases": ["fortis"], "city": "Mumbai", "area": "Mulund", "networks": ["DEMO-NET-1"] },
+    { "id": "H005", "name": "Lilavati Hospital", "aliases": ["lilavati"], "city": "Mumbai", "area": "Bandra West", "networks": [] },
+    { "id": "H006", "name": "Kokilaben Dhirubhai Ambani Hospital", "aliases": ["kokilaben"], "city": "Mumbai", "area": "Andheri West", "networks": ["DEMO-NET-1"] },
+    { "id": "H007", "name": "Nanavati Max Hospital", "aliases": ["nanavati"], "city": "Mumbai", "area": "Vile Parle West", "networks": ["DEMO-NET-1"] },
+    { "id": "H008", "name": "Shanti Care Multispeciality Hospital", "aliases": ["shanti care", "shanti"], "city": "Mumbai", "area": "Andheri East", "networks": [] },
+    { "id": "H009", "name": "Max Super Speciality Hospital", "aliases": ["max", "max hospital"], "city": "Delhi", "area": "Saket", "networks": ["DEMO-NET-1"] },
+    { "id": "H010", "name": "Ruby Hall Clinic", "aliases": ["ruby hall"], "city": "Pune", "area": "Sassoon Road", "networks": ["DEMO-NET-1"] }
+  ]
+}
