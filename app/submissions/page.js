@@ -7,6 +7,7 @@ import { inr } from '@/lib/format';
 import { istTime } from '@/lib/time';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { statelessSessionsEnabled } from '@/lib/statelessSession';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Past submissions · Saral' };
@@ -14,8 +15,9 @@ export const metadata = { title: 'Past submissions · Saral' };
 export default async function SubmissionsPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
-  const rows = listSubmissions(userId);
-  const s = stats(userId);
+  const stateless = statelessSessionsEnabled();
+  const rows = stateless ? [] : listSubmissions(userId);
+  const s = stateless ? { sessions: 0, submissions: 0, aiFields: 0, userEdits: 0, documents: 0 } : stats(userId);
   const tiles = [
     ['Journeys started', s.sessions],
     ['Submitted', s.submissions],
@@ -40,6 +42,7 @@ export default async function SubmissionsPage() {
           <div>
             <h1 className="text-3xl font-extrabold text-ink">Past submissions</h1>
             <p className="mt-1 text-mute">Every claim and pre-check, with a full record of what the AI filled, from what, and what the user changed.</p>
+            {stateless && <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-warn">Submission history needs shared persistent storage and is unavailable in stateless mode.</p>}
           </div>
           <ResetAllButton />
         </div>

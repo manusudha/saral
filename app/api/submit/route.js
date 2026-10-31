@@ -7,6 +7,7 @@ import policy from '@/data/policy.json';
 import { getSignedInUser } from '@/lib/clerkUser';
 import { SCHEMAS } from '@/lib/schemas';
 import { illustrativePolicyContext } from '@/lib/illustrativePolicy';
+import { createMemoryToken, readMemoryToken, readSessionToken, statelessSessionsEnabled } from '@/lib/statelessSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,11 @@ export async function POST(req) {
   }
   const user = await getSignedInUser();
   if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
-  const session = loadSession(body.sessionId, user.id);
+  const stateless = statelessSessionsEnabled();
+  const session = stateless ? readSessionToken(body.sessionToken, user.id) : loadSession(body.sessionId, user.id);
+  if (session && body.sessionId && session.id !== body.sessionId) {
+    return NextResponse.json({ error: 'Unknown session' }, { status: 404 });
+  }
   if (!session || !session.state?.fields) return NextResponse.json({ error: 'Unknown session' }, { status: 404 });
   if (session.status !== 'active') return NextResponse.json({ error: 'This journey has already been submitted.' }, { status: 409 });
   if (!SCHEMAS[session.journey]) return NextResponse.json({ error: 'Unknown journey' }, { status: 400 });
@@ -129,29 +134,42 @@ export async function POST(req) {
     result.disclaimer = 'This estimate uses illustrative sample policy terms, not information from your account or a verified policy. Confirm coverage and benefits with your insurer/TPA.';
   }
 
-  try {
-    const saved = saveSubmission({
-      ...result,
-      sessionId,
-      userId: user.id,
-      journey,
-      fields,
-      computed: { ...c, breakdown: status.breakdown, consents },
-      n8nStatus: 'pending',
-      memoryFacts,
-    });
-    if (!saved) return NextResponse.json({ error: 'This journey is no longer available to submit.' }, { status: 409 });
-  } catch (e) {
-    console.error('[saral] db error on submit', e.message);
-    return NextResponse.json({ error: 'Could not save this submission. Please try again.' }, { status: 500 });
+  if (!stateless) {
+    try {
+      const saved = saveSubmission({
+        ...result,
+        sessionId,
+        userId: user.id,
+        journey,
+        fields,
+        computed: { ...c, breakdown: status.breakdown, consents },
+        n8nStatus: 'pending',
+        memoryFacts,
+      });
+      if (!saved) return NextResponse.json({ error: 'This journey is no longer available to submit.' }, { status: 409 });
+    } catch (e) {
+      console.error('[saral] db error on submit', e.message);
+      return NextResponse.json({ error: 'Could not save this submission. Please try again.' }, { status: 500 });
+    }
   }
 
+  let nextMemoryToken;
+  if (stateless) {
+    try {
+      nextMemoryToken = createMemoryToken(user.id, { ...readMemoryToken(body.memoryToken, user.id), ...memoryFacts });
+    } catch (e) {
+      console.error('[saral] could not update encrypted user memory', e.message);
+      return NextResponse.json({ error: 'Could not save remembered details securely. Please try again.' }, { status: 500 });
+    }
+  }
   const safeFields = Object.fromEntries(Object.entries(fields).map(([k, f]) => [k, { value: k === 'pan' ? maskPan(f.value) : f.value, source: f.source }]));
   const n8n = await notifyN8n({ event: `${journey}.submitted`, reference: result.id, journey, claimType: status.claimType || null, status: result.status, submittedAt: now, fields: safeFields, computed: { ...c, network: undefined }, simulated: true });
-  try {
-    updateSubmissionN8n(result.id, n8n.sent ? 'sent' : `not sent: ${n8n.reason || n8n.status}`);
-  } catch (e) {
-    console.error('[saral] db error updating n8n status', e.message);
+  if (!stateless) {
+    try {
+      updateSubmissionN8n(result.id, n8n.sent ? 'sent' : `not sent: ${n8n.reason || n8n.status}`);
+    } catch (e) {
+      console.error('[saral] db error updating n8n status', e.message);
+    }
   }
-  return NextResponse.json({ ...result, n8n, saved: true });
+  return NextResponse.json({ ...result, n8n, saved: !stateless, ...(nextMemoryToken ? { memoryToken: nextMemoryToken } : {}) });
 }

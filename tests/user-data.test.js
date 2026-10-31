@@ -5,12 +5,12 @@ import os from 'os';
 import path from 'path';
 import { greeting } from '../lib/replies';
 import { mockAnswer } from '../lib/mockExtract';
-import { prefillFor, profileFactsFromFields, rememberProfileFromFields } from '../lib/memory';
 
 const originalDbPath = process.env.DB_PATH;
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'saral-user-data-'));
 const dbPath = path.join(tempDir, 'saral.db');
 let dbApi;
+let memoryApi;
 
 beforeAll(async () => {
   const legacyDb = new Database(dbPath);
@@ -29,6 +29,7 @@ beforeAll(async () => {
 
   process.env.DB_PATH = dbPath;
   dbApi = await import('../lib/db');
+  memoryApi = await import('../lib/memory');
 });
 
 afterAll(() => {
@@ -100,26 +101,26 @@ describe('account-specific greetings', () => {
 
   it('remembers only user-owned profile facts and prefills them only for that Clerk account', () => {
     const sessionId = dbApi.createSession({ journey: 'loan_precheck', lang: 'en', aiMode: 'offline', userId: 'user-memory-a' });
-    const facts = profileFactsFromFields({
+    const facts = memoryApi.profileFactsFromFields({
       fullName: { value: 'Riya User', source: 'chat' },
       monthlyIncome: { value: 72000, source: 'user' },
       patientName: { value: 'Family Member', source: 'document' },
       policyHolder: { value: 'Sample Holder', source: 'policy' },
     });
     expect(facts).toEqual({ fullName: 'Riya User', monthlyIncome: 72000 });
-    rememberProfileFromFields({
+    memoryApi.rememberProfileFromFields({
       fullName: { value: 'Riya User', source: 'chat' },
       monthlyIncome: { value: 72000, source: 'user' },
     }, sessionId, 'user-memory-a');
 
-    expect(prefillFor('loan_precheck', { id: 'user-memory-a', fullName: 'Clerk Name' })).toMatchObject({
+    expect(memoryApi.prefillFor('loan_precheck', { id: 'user-memory-a', fullName: 'Clerk Name' })).toMatchObject({
       fullName: { value: 'Riya User', source: 'memory' },
       monthlyIncome: { value: 72000, source: 'memory' },
     });
-    expect(prefillFor('loan_precheck', { id: 'user-memory-b', fullName: 'Other User' })).toMatchObject({
+    expect(memoryApi.prefillFor('loan_precheck', { id: 'user-memory-b', fullName: 'Other User' })).toMatchObject({
       fullName: { value: 'Other User', source: 'account' },
     });
-    expect(prefillFor('loan_precheck', { id: 'user-memory-b', fullName: 'Other User' })).not.toHaveProperty('monthlyIncome');
+    expect(memoryApi.prefillFor('loan_precheck', { id: 'user-memory-b', fullName: 'Other User' })).not.toHaveProperty('monthlyIncome');
     dbApi.clearAll('user-memory-a');
   });
 

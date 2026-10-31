@@ -8,6 +8,7 @@ import { displayValue, inr } from '@/lib/format';
 import { istTime } from '@/lib/time';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { statelessSessionsEnabled } from '@/lib/statelessSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ function Section({ title, subtitle, children }) {
 export default async function SubmissionDetail({ params }) {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
+  if (statelessSessionsEnabled()) notFound();
   const d = getSubmissionDetail(params.id, userId);
   if (!d) notFound();
   const { submission: sub, session, events, messages, documents } = d;

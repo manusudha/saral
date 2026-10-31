@@ -33,6 +33,9 @@ export default function Home() {
       setResetMsg(result.error || 'Could not clear memory. Please try again.');
       return;
     }
+    if (result.clientOnly) {
+      try { window.localStorage.removeItem('saral:user-memory-token'); } catch {}
+    }
     setResetMsg('Memory cleared — next journeys start fresh.');
     setTimeout(() => setResetMsg(''), 3000);
   }

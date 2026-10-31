@@ -34,7 +34,7 @@ With Clerk configured, the app works without AI provider keys in *offline demo* 
 
 The header badges show which mode you're in: **AI: live / offline demo** and **Voice: Sarvam / browser**.
 
-The dashboard, journey, submissions, and API routes require a signed-in account. The SQLite demo database is still shared across accounts, so do not use real customer data until per-user data isolation is implemented.
+The dashboard, journey, submissions, and API routes require a signed-in account. Sessions, submissions, and remembered facts are scoped to the signed-in Clerk user.
 
 ## 2. Database (SQLite, nothing to set up)
 
@@ -192,4 +192,4 @@ public/samples/              sample bill + discharge summary
 - **`npm install` fails on `better-sqlite3`.** Use Node 22 or newer. The project uses a current `better-sqlite3` release with prebuilt binaries for supported platforms. If your platform has no prebuilt binary and it tries to compile on Windows, install the "Desktop development with C++" workload from Visual Studio Build Tools, then run `npm install` again.
 
 ## 7. Deploy (optional)
-Push to GitHub → import on **vercel.com** → add the same environment variables → deploy. On Vercel, the app defaults to `/tmp/saral.db`, since the deployed app directory is read-only. Vercel's temporary disk means the database resets whenever the server restarts or a new serverless instance handles a request, so this is suitable only for a demo. You can override the path with `DB_PATH`; for data that must persist or be shared across instances, use a hosted database such as Postgres.
+Push to GitHub → import on **vercel.com** → add the same environment variables → deploy. Vercel automatically uses encrypted, Clerk-user-bound browser tokens for in-progress journeys and remembered profile facts, avoiding SQLite for journey API requests. Tokens require `CLERK_SECRET_KEY`; sessions expire after 12 hours and remembered facts after 90 days. This stateless mode does not persist submission history or audit records and does not sync browser tokens across devices. The `/submissions` page explains that limitation. Set `STATELESS_SESSIONS=1` to enable this mode on another serverless host. For durable history, audit records, cross-device continuity, and revocable sessions, configure shared persistent storage such as Postgres.

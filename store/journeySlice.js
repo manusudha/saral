@@ -6,9 +6,19 @@ import { illustrativePolicyContext } from '@/lib/illustrativePolicy';
 let msgId = 0;
 const newMsg = (m) => ({ id: ++msgId, at: Date.now(), ...m });
 const storeKey = (journey) => `saral:session:${journey}`;
+const tokenKey = (journey) => `saral:session-token:${journey}`;
+const memoryKey = 'saral:user-memory-token';
 const lsGet = (k) => { try { return window.localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { window.localStorage.setItem(k, v); } catch {} };
 const lsDel = (k) => { try { window.localStorage.removeItem(k); } catch {} };
+const tokensFor = (journey) => ({
+  sessionToken: lsGet(tokenKey(journey)),
+  memoryToken: lsGet(memoryKey),
+});
+const persistTokens = (data) => {
+  if (data.sessionToken && data.journey) lsSet(tokenKey(data.journey), data.sessionToken);
+  if (data.memoryToken) lsSet(memoryKey, data.memoryToken);
+};
 
 const initialState = {
   sessionId: null, // database session — every turn and edit is logged against it
@@ -41,34 +51,50 @@ async function postJSON(url, body) {
 }
 
 const history = (s) => s.messages.filter((m) => m.kind !== 'doc' && m.text).map((m) => ({ role: m.role, text: m.text }));
-const base = (s) => ({ sessionId: s.sessionId, journey: s.journey, fields: s.fields, docs: s.docs, lang: s.lang, pending: s.pending });
+const base = (s) => ({ sessionId: s.sessionId, journey: s.journey, fields: s.fields, docs: s.docs, lang: s.lang, pending: s.pending, ...tokensFor(s.journey) });
 
 export const startJourney = createAsyncThunk('journey/start', async ({ journey, fresh = false }, { getState }) => {
   const resumeSessionId = fresh ? null : lsGet(storeKey(journey));
-  const data = await postJSON('/api/start', { journey, lang: getState().journey.lang, resumeSessionId });
+  const data = await postJSON('/api/start', {
+    journey,
+    lang: getState().journey.lang,
+    resumeSessionId,
+    sessionToken: fresh ? null : lsGet(tokenKey(journey)),
+    memoryToken: lsGet(memoryKey),
+  });
   if (data.sessionId) lsSet(storeKey(journey), data.sessionId);
+  if (data.sessionToken) lsSet(tokenKey(journey), data.sessionToken);
+  if (data.memoryToken) lsSet(memoryKey, data.memoryToken);
   return data;
 });
 
 export const sendTurn = createAsyncThunk('journey/turn', async ({ text, mode = 'chat' }, { getState }) => {
   const s = getState().journey;
-  return postJSON('/api/agent', { ...base(s), text, mode, messages: history(s) });
+  const data = await postJSON('/api/agent', { ...base(s), text, mode, messages: history(s) });
+  persistTokens({ ...data, journey: s.journey });
+  return data;
 });
 
 export const uploadDoc = createAsyncThunk('journey/doc', async ({ dataUrl, fileName }, { getState }) => {
   const s = getState().journey;
-  return postJSON('/api/agent', { ...base(s), file: { dataUrl, name: fileName } });
+  const data = await postJSON('/api/agent', { ...base(s), file: { dataUrl, name: fileName } });
+  persistTokens({ ...data, journey: s.journey });
+  return data;
 });
 
 export const chooseOption = createAsyncThunk('journey/choose', async ({ index }, { getState }) => {
   const s = getState().journey;
-  return postJSON('/api/agent', { ...base(s), choice: index });
+  const data = await postJSON('/api/agent', { ...base(s), choice: index });
+  persistTokens({ ...data, journey: s.journey });
+  return data;
 });
 
 export const submitJourney = createAsyncThunk('journey/submit', async ({ consents }, { getState }) => {
   const s = getState().journey;
   const r = await postJSON('/api/submit', { ...base(s), consents });
+  persistTokens({ ...r, journey: s.journey });
   lsDel(storeKey(s.journey));
+  lsDel(tokenKey(s.journey));
   return r;
 });
 
@@ -177,11 +203,14 @@ export const editFieldAndLog = createAsyncThunk('journey/editLogged', async ({ k
   dispatch(slice.actions.editField({ key, value }));
   const s = getState().journey;
   if (!s.sessionId) return;
-  fetch('/api/edit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId: s.sessionId, field: key, before: before || null, after: s.fields[key], state: { fields: s.fields, docs: s.docs, pending: s.pending, lang: s.lang } }),
-  }).catch(() => {});
+  const response = await postJSON('/api/edit', {
+    ...base(s),
+    field: key,
+    before: before || null,
+    after: s.fields[key],
+    state: { fields: s.fields, docs: s.docs, pending: s.pending, lang: s.lang },
+  });
+  persistTokens({ ...response, journey: s.journey });
 });
 
 export const { setLang, setAutoSpeak, setBusy, setStage, setError, setViewDoc, addSaralMessage, editField } = slice.actions;

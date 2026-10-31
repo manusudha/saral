@@ -11,6 +11,16 @@ export default function ResetAllButton() {
     try {
       const response = await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'all' }) });
       if (!response.ok) throw new Error('Could not reset your data. Please try again.');
+      const result = await response.json();
+      if (result.clientOnly) {
+        try {
+          window.localStorage.removeItem('saral:user-memory-token');
+          for (const journey of ['health_claim', 'loan_precheck']) {
+            window.localStorage.removeItem(`saral:session:${journey}`);
+            window.localStorage.removeItem(`saral:session-token:${journey}`);
+          }
+        } catch {}
+      }
       setError('');
       setArmed(false);
       router.refresh();

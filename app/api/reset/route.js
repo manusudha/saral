@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { resetMemory } from '@/lib/memory';
 import { clearAll } from '@/lib/db';
 import { getSignedInUser } from '@/lib/clerkUser';
+import { statelessSessionsEnabled } from '@/lib/statelessSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export async function POST(req) {
   if (scope !== 'memory' && scope !== 'all') {
     return NextResponse.json({ error: 'Unknown reset scope' }, { status: 400 });
   }
+  if (statelessSessionsEnabled()) return NextResponse.json({ ok: true, scope, clientOnly: true });
   if (scope === 'all') clearAll(user.id);
   else resetMemory(user.id);
   return NextResponse.json({ ok: true, scope });

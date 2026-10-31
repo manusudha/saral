@@ -4,7 +4,8 @@ import { getSignedInUser } from '@/lib/clerkUser';
 import { derive } from '@/lib/rules';
 import { SCHEMAS, fieldDef } from '@/lib/schemas';
 import { illustrativePolicyContext } from '@/lib/illustrativePolicy';
-import { rememberProfileFromFields } from '@/lib/memory';
+import { profileFactsFromFields, rememberProfileFromFields } from '@/lib/memory';
+import { createMemoryToken, createSessionToken, readMemoryToken, readSessionToken, statelessSessionsEnabled } from '@/lib/statelessSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,11 @@ export async function POST(req) {
   }
   const user = await getSignedInUser();
   if (!user) return NextResponse.json({ ok: false, error: 'Sign in required' }, { status: 401 });
-  const session = loadSession(body.sessionId, user.id);
+  const stateless = statelessSessionsEnabled();
+  const session = stateless ? readSessionToken(body.sessionToken, user.id) : loadSession(body.sessionId, user.id);
+  if (session && body.sessionId && session.id !== body.sessionId) {
+    return NextResponse.json({ ok: false, error: 'Unknown session' }, { status: 404 });
+  }
   if (!session || session.status !== 'active' || !session.state?.fields) {
     return NextResponse.json({ ok: false, error: 'Unknown session' }, { status: 404 });
   }
@@ -42,9 +47,24 @@ export async function POST(req) {
     ...previous,
     [field]: { value, source: 'user', confidence: 1, verified: true },
   }, illustrativePolicyContext);
-  logFieldChanges(session.id, { [field]: previous[field] }, { [field]: fields[field] }, 'Edited by the user on the review screen');
-  saveSessionState(session.id, { ...session.state, fields });
-  rememberProfileFromFields(fields, session.id, user.id);
-  touchSession(session.id);
-  return NextResponse.json({ ok: true });
+  if (!stateless) {
+    logFieldChanges(session.id, { [field]: previous[field] }, { [field]: fields[field] }, 'Edited by the user on the review screen');
+    saveSessionState(session.id, { ...session.state, fields });
+    rememberProfileFromFields(fields, session.id, user.id);
+    touchSession(session.id);
+    return NextResponse.json({ ok: true });
+  }
+  const state = { ...session.state, fields };
+  const memoryFacts = { ...readMemoryToken(body.memoryToken, user.id), ...profileFactsFromFields(fields) };
+  try {
+    return NextResponse.json({
+      ok: true,
+      sessionToken: createSessionToken({ id: session.id, userId: user.id, journey: session.journey, state, messages: session.messages }),
+      memoryToken: createMemoryToken(user.id, memoryFacts),
+    });
+  } catch (e) {
+    console.error('[saral] could not update encrypted session', e.message);
+    const tooLarge = e.message.includes('too large');
+    return NextResponse.json({ ok: false, error: tooLarge ? 'This journey has reached its storage limit. Remove some details and try again.' : 'Could not save this edit securely.' }, { status: tooLarge ? 413 : 500 });
+  }
 }

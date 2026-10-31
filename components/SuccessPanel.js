@@ -21,6 +21,7 @@ export default function SuccessPanel() {
       </div>
 
       {result.disclaimer && <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-warn">{result.disclaimer}</p>}
+      {!result.saved && <p className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-navy">This result is not saved. Without shared storage, past submissions and audit records are unavailable after this page.</p>}
       <p className="mt-5 text-xs text-mute">Steps marked <span className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold">simulated</span> are a demo — no insurer or lender is connected yet.</p>
       <ol className="relative mt-4 space-y-6 border-l-2 border-line pl-6">
         {result.timeline.map((t) => (
