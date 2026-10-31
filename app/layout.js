@@ -1,10 +1,24 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import './globals.css';
 import Providers from './providers';
+import PwaRegister from './PwaRegister';
+
+export const viewport = {
+  themeColor: '#002970',
+};
 
 export const metadata = {
   title: 'Saral — financial journeys in one conversation',
   description: 'Paytm Build for India AI Hackathon · Track 2 prototype',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Saral',
+  },
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon-192.png',
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -17,6 +31,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-sans antialiased">
         <ClerkProvider>
+          <PwaRegister />
           <Providers>{children}</Providers>
         </ClerkProvider>
       </body>

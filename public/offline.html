@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#002970">
+    <title>You're offline · Saral</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        align-items: center;
+        background: #f5f9fc;
+        color: #10243e;
+        display: flex;
+        font-family: system-ui, sans-serif;
+        justify-content: center;
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px;
+      }
+      main {
+        background: #fff;
+        border: 1px solid #e5edf5;
+        border-radius: 24px;
+        max-width: 440px;
+        padding: 36px;
+        text-align: center;
+        width: 100%;
+      }
+      .mark {
+        align-items: center;
+        background: #00baf2;
+        border-radius: 16px;
+        color: white;
+        display: inline-flex;
+        font-size: 24px;
+        font-weight: 800;
+        height: 56px;
+        justify-content: center;
+        width: 56px;
+      }
+      h1 { color: #002970; font-size: 26px; margin: 20px 0 8px; }
+      p { color: #5a6878; line-height: 1.6; margin: 0; }
+      button {
+        background: #00baf2;
+        border: 0;
+        border-radius: 999px;
+        color: white;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        margin-top: 24px;
+        padding: 12px 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="mark" aria-hidden="true">स</span>
+      <h1>You're offline</h1>
+      <p>Reconnect to continue your Saral journey. Your personal information and forms are never stored for offline viewing.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

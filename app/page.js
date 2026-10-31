@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import PwaInstallButton from '@/components/PwaInstallButton';
 
 const FEATURES = [
   {
@@ -36,6 +37,7 @@ export default async function WelcomePage() {
         </Link>
 
         <div className="flex items-center gap-3">
+          <PwaInstallButton />
           <Link href="/sign-in" className="whitespace-nowrap rounded-full px-3 py-2.5 text-sm font-bold text-[#002970] transition hover:bg-sky-50 sm:px-4">
             Sign in
           </Link>
