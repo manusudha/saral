@@ -91,7 +91,7 @@ export default function JourneyPage() {
       {/* app bar */}
       <header className="relative z-10 shrink-0 border-b border-line bg-white">
         <div className="flex items-center gap-4 px-4 py-2.5 sm:px-6">
-          <Link href="/" aria-label="Saral home" className="shrink-0"><Logo /></Link>
+          <Link href="/dashboard" aria-label="Saral home" className="shrink-0"><Logo /></Link>
           <div className="hidden h-8 w-px bg-line md:block" />
           <div className="hidden min-w-0 md:block">
             <div className="truncate text-sm font-bold text-ink">{schema?.title || '…'}</div>

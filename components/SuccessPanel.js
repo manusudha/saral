@@ -43,7 +43,7 @@ export default function SuccessPanel() {
         {result.saved && (
           <Link href={`/submissions/${result.id}`} className="rounded-full border border-navy px-5 py-3 text-sm font-bold text-navy hover:bg-sky-50">View audit record</Link>
         )}
-        <Link href="/" className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-mute hover:text-navy">Home</Link>
+        <Link href="/dashboard" className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-mute hover:text-navy">Home</Link>
         <span className="ml-auto text-xs text-mute">
           {result.saved ? 'Saved to database ✓ · ' : ''}Workflow: {result.n8n?.sent ? 'sent to n8n ✓' : `n8n not called (${result.n8n?.reason || result.n8n?.status || 'off'})`}
         </span>

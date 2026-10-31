@@ -4,30 +4,35 @@ Paytm Build for India AI Hackathon · Track 2 (AI-Powered Financial Journeys)
 
 The user talks in Hindi, English or Hinglish and sends photos. Saral fills the form live, explains the payout or EMI, flags what's missing, and submits after the user confirms.
 
-**Stack:** Next.js 14 (App Router) · Tailwind CSS · Redux Toolkit · SQLite (better-sqlite3) · Sarvam AI (speech-to-text + text-to-speech) · any OpenAI-compatible vision model (Gemini / OpenAI) · n8n webhook
+**Stack:** Next.js 14 (App Router) · Clerk authentication · Tailwind CSS · Redux Toolkit · SQLite (better-sqlite3) · Sarvam AI (speech-to-text + text-to-speech) · any OpenAI-compatible vision model (Gemini / OpenAI) · n8n webhook
 
 ---
 
 ## 1. Run it (5 minutes)
 
-Needs **Node.js 18.18 or newer** (20 LTS recommended) and **Chrome**.
+Needs **Node.js 22 or newer** and **Chrome**.
 
 ```bash
 cd saral
 npm install
-cp .env.example .env.local      # Windows: copy .env.example .env.local
 npm run dev
 ```
 
 Open **http://localhost:3000**.
 
-**It runs with no keys.** Without keys it's in *offline demo* mode:
+The welcome screen at `/` links to the custom-branded sign-in and sign-up pages. After authentication, users go to the Saral dashboard at `/dashboard`. Clerk uses individual accounts; Organizations are disabled.
+
+Clerk sign-in requires a Clerk development instance. The initial setup writes temporary development keys to `.env.local`. For a fresh clone, authenticate with `npx -y clerk@latest auth login`, link the Clerk app you want to use with `npx -y clerk@latest link --app <application-id>`, then run `npx -y clerk@latest env pull`. Do not commit `.env.local`. Sign-in supports email/password, phone, username, Google, Apple, and Microsoft.
+
+With Clerk configured, the app works without AI provider keys in *offline demo* mode:
 - text is understood by a built-in rule-based extractor
 - the two sample documents are "read" from fixed data
 - voice input uses Chrome's own speech recognition
 - replies are spoken with the browser voice
 
 The header badges show which mode you're in: **AI: live / offline demo** and **Voice: Sarvam / browser**.
+
+The dashboard, journey, submissions, and API routes require a signed-in account. The SQLite demo database is still shared across accounts, so do not use real customer data until per-user data isolation is implemented.
 
 ## 2. Database (SQLite, nothing to set up)
 
@@ -136,7 +141,10 @@ Design choices worth telling the judges:
 ### Project map
 ```
 app/
-  page.js                    home (journey cards, demo kit, reset memory)
+  page.js                    Paytm-inspired welcome page
+  dashboard/page.js          journey cards, demo kit, reset memory
+  sign-in/[[...sign-in]]/    branded Clerk sign-in
+  sign-up/[[...sign-up]]/    branded Clerk sign-up
   journey/[type]/page.js     main screen: phone chat + live form / review / success
   submissions/page.js        past submissions + stats (reads the database)
   submissions/[id]/page.js   one submission: final form, transcript, audit trail, documents
@@ -177,7 +185,7 @@ public/samples/              sample bill + discharge summary
 - **The AI misses things.** Check the terminal: `[saral] text AI failed…` means the key or model is wrong and it fell back to offline mode.
 - **Claim shows "must be filed within 60 days".** The sample documents are dated 20–24 Oct 2026. Change `claimWindowDays` in `data/policy.json` if your demo is later than that.
 - **Starting over between rehearsals.** Click *Reset Saral's memory* on the home page, or *Reset all demo data* on Past submissions.
-- **`npm install` fails on `better-sqlite3`.** It downloads a ready-made build for your system. Use Node 20 or 22 LTS (not an odd-numbered or brand-new version). On Windows, if it still tries to compile, install the "Desktop development with C++" workload from Visual Studio Build Tools, then run `npm install` again.
+- **`npm install` fails on `better-sqlite3`.** Use Node 22 or newer. The project uses a current `better-sqlite3` release with prebuilt binaries for supported platforms. If your platform has no prebuilt binary and it tries to compile on Windows, install the "Desktop development with C++" workload from Visual Studio Build Tools, then run `npm install` again.
 
 ## 7. Deploy (optional)
 Push to GitHub → import on **vercel.com** → add the same environment variables, plus `DB_PATH=/tmp/saral.db` → deploy. Vercel's disk is temporary, so the database resets whenever the server restarts. That's fine for a demo. For data that must persist, run it on your laptop or switch `lib/db.js` to a hosted Postgres.

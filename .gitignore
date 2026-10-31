@@ -4,3 +4,6 @@ node_modules
 data/runtime-*.json
 data/*.db
 data/*.db-*
+.clerk/
+.npmrc
+.nvmrc

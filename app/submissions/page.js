@@ -23,9 +23,9 @@ export default function SubmissionsPage() {
     <main className="min-h-screen">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-6 py-3">
-          <Link href="/"><Logo /></Link>
+          <Link href="/dashboard"><Logo /></Link>
           <nav className="ml-auto flex items-center gap-2 text-sm font-semibold">
-            <Link href="/" className="rounded-full px-3 py-1.5 text-mute hover:text-navy">Home</Link>
+            <Link href="/dashboard" className="rounded-full px-3 py-1.5 text-mute hover:text-navy">Home</Link>
             <span className="rounded-full bg-navy px-3 py-1.5 text-white">Past submissions</span>
           </nav>
         </div>
